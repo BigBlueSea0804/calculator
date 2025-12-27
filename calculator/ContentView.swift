@@ -29,7 +29,7 @@ enum CalcButton: String {
         case .delete, .clear, .percent:
             return Color(.lightGray)
         default:
-            return Color(UIColor(red: 55 / 255.0, green: 55 / 255.0, blue: 55 / 255.0, alpha: 1))
+            return Color(red: 55 / 255.0, green: 55 / 255.0, blue: 55 / 255.0)
         }
     }
 
@@ -59,57 +59,67 @@ struct ContentView: View {
     ]
 
     var body: some View {
-        ZStack {
-            Color.black.edgesIgnoringSafeArea(.all)
+        GeometryReader { geometry in
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
 
-            VStack {
-                Spacer()
-
-                // Result Display
-                HStack {
+                VStack {
                     Spacer()
-                    Text(value)
-                        .bold()
-                        .font(.system(size: 100))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
-                .padding()
 
-                // Buttons
-                ForEach(buttons, id: \.self) { row in
-                    HStack(spacing: 12) {
-                        ForEach(row, id: \.self) { item in
-                            Button(
-                                action: {
-                                    self.didTap(button: item)
-                                },
-                                label: {
-                                    Group {
-                                        if item == .delete {
-                                            Image(systemName: "delete.left")
-                                                .font(.system(size: 32))
-                                        } else {
-                                            Text(item.rawValue)
-                                                .font(.system(size: 32))
-                                        }
-                                    }
-                                    .frame(
-                                        width: self.buttonWidth(item: item),
-                                        height: self.buttonHeight()
-                                    )
-                                    .background(self.buttonBackgroundColor(item: item))
-                                    .foregroundColor(self.buttonTextColor(item: item))
-                                    .cornerRadius(self.buttonWidth(item: item) / 2)
-                                })
-                        }
+                    // Result Display
+                    HStack {
+                        Spacer()
+                        Text(value)
+                            .bold()
+                            .font(.system(size: 100))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
                     }
-                    .padding(.bottom, 3)
+                    .padding()
+
+                    // Buttons
+                    ForEach(buttons, id: \.self) { row in
+                        HStack(spacing: 12) {
+                            ForEach(row, id: \.self) { item in
+                                Button(
+                                    action: {
+                                        self.didTap(button: item)
+                                    },
+                                    label: {
+                                        Group {
+                                            if item == .delete {
+                                                Image(systemName: "delete.left")
+                                                    .font(.system(size: 32))
+                                            } else {
+                                                Text(item.rawValue)
+                                                    .font(.system(size: 32))
+                                            }
+                                        }
+                                        // Pass screen width from geometry reader
+                                        .frame(
+                                            width: self.buttonWidth(
+                                                item: item, screenWidth: geometry.size.width),
+                                            height: self.buttonHeight(
+                                                screenWidth: geometry.size.width)
+                                        )
+                                        .background(self.buttonBackgroundColor(item: item))
+                                        .foregroundColor(self.buttonTextColor(item: item))
+                                        .cornerRadius(
+                                            self.buttonWidth(
+                                                item: item, screenWidth: geometry.size.width) / 2)
+                                    })
+                            }
+                        }
+                        .padding(.bottom, 3)
+                    }
                 }
             }
         }
     }
+
+    // ... [Color functions remain same, omitted for brevity, but since replace_file_content needs contiguous block, I must be careful. I will use multi_replace if I skip lines, but here I can probably replace the body and then the helper functions separately or just replace the whole body and helpers if they are contiguous]
+    // Actually, the buttonWidth helper is at the end.
 
     func buttonBackgroundColor(item: CalcButton) -> Color {
         if item == currentOperation {
@@ -208,11 +218,14 @@ struct ContentView: View {
         }
     }
 
-    func buttonWidth(item: CalcButton) -> CGFloat {
-        return (UIScreen.main.bounds.width - (5 * 12)) / 4
+    func buttonWidth(item: CalcButton, screenWidth: CGFloat) -> CGFloat {
+        if item == .zero {
+            return ((screenWidth - (5 * 12)) / 4)
+        }
+        return (screenWidth - (5 * 12)) / 4
     }
 
-    func buttonHeight() -> CGFloat {
-        return (UIScreen.main.bounds.width - (5 * 12)) / 4
+    func buttonHeight(screenWidth: CGFloat) -> CGFloat {
+        return (screenWidth - (5 * 12)) / 4
     }
 }
