@@ -3,7 +3,6 @@ import SwiftUI
 struct MainView: View {
     @StateObject private var calculatorViewModel = CalculatorViewModel()
     @State private var currentMode: CalculatorMode = .basic
-    @State private var showMenu = false
     @State private var showHistory = false
     @State private var selectedDetent: PresentationDetent = .medium
 
@@ -18,7 +17,7 @@ struct MainView: View {
                     Button(action: {
                         showHistory = true
                     }) {
-                        Image(systemName: "clock.arrow.circlepath")  // User asked for this or clock
+                        Image(systemName: "clock")
                             .font(.system(size: 20))
                             .foregroundColor(.white)
                             .frame(width: 40, height: 40)
@@ -28,12 +27,26 @@ struct MainView: View {
 
                     Spacer()
 
-                    // Mode Button (Top-Trailing)
-                    Button(action: {
-                        withAnimation {
-                            showMenu.toggle()
+                    // Mode Menu (Top-Trailing)
+                    Menu {
+                        ForEach(CalculatorMode.allCases, id: \.self) { mode in
+                            if mode == .converter {
+                                Divider()
+                            }
+
+                            Button(action: {
+                                currentMode = mode
+                            }) {
+                                HStack {
+                                    Text(mode.rawValue)
+                                    if currentMode == mode {
+                                        Image(systemName: "checkmark")
+                                    }
+                                    Image(systemName: mode.iconName)
+                                }
+                            }
                         }
-                    }) {
+                    } label: {
                         Image(systemName: "calculator")
                             .font(.system(size: 20))
                             .foregroundColor(.white)
@@ -43,7 +56,7 @@ struct MainView: View {
                     }
                 }
                 .padding(.horizontal)
-                .padding(.top, 40)  // Adjust for safe area
+                .padding(.top, 10)  // Reduced padding to move buttons up
                 .zIndex(1)
                 .sheet(isPresented: $showHistory) {
                     HistoryView(viewModel: calculatorViewModel, isPresented: $showHistory)
@@ -73,48 +86,6 @@ struct MainView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-
-            // Custom Menu Overlay
-            if showMenu {
-                Color.black.opacity(0.5)
-                    .edgesIgnoringSafeArea(.all)
-                    .onTapGesture {
-                        withAnimation {
-                            showMenu = false
-                        }
-                    }
-
-                HStack {
-                    VStack(alignment: .leading, spacing: 20) {
-                        ForEach(CalculatorMode.allCases, id: \.self) { mode in
-                            Button(action: {
-                                currentMode = mode
-                                withAnimation {
-                                    showMenu = false
-                                }
-                            }) {
-                                HStack {
-                                    Image(systemName: mode.iconName)
-                                        .frame(width: 30)
-                                    Text(mode.rawValue)
-                                        .fontWeight(.medium)
-                                }
-                                .foregroundColor(.white)
-                                .padding(.vertical, 8)
-                            }
-                        }
-                        Spacer()
-                    }
-                    .padding()
-                    .frame(width: 250)
-                    .background(Color(red: 0.15, green: 0.15, blue: 0.15))
-                    .edgesIgnoringSafeArea(.bottom)
-
-                    Spacer()
-                }
-                .transition(.move(edge: .leading))
-                .zIndex(2)
             }
         }
     }
