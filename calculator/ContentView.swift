@@ -229,3 +229,7 @@ struct ContentView: View {
         return (screenWidth - (5 * 12)) / 4
     }
 }
+
+#Preview {
+    ContentView()
+}
