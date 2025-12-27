@@ -47,7 +47,7 @@ struct MainView: View {
                             }
                         }
                     } label: {
-                        Image(systemName: "calculator")
+                        Image(systemName: "function")
                             .font(.system(size: 20))
                             .foregroundColor(.white)
                             .frame(width: 40, height: 40)
