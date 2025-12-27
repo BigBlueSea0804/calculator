@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ScientificCalculatorView: View {
     @ObservedObject var viewModel: CalculatorViewModel
-    @State private var showHistory = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -14,15 +13,6 @@ struct ScientificCalculatorView: View {
 
                     // Result Display
                     HStack {
-                        Button(action: { showHistory = true }) {
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.title)
-                                .foregroundColor(.gray)
-                        }
-                        .sheet(isPresented: $showHistory) {
-                            HistoryView(viewModel: viewModel, isPresented: $showHistory)
-                        }
-
                         Spacer()
                         Text(viewModel.value)
                             .bold()

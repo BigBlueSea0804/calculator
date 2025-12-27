@@ -4,34 +4,60 @@ struct MainView: View {
     @StateObject private var calculatorViewModel = CalculatorViewModel()
     @State private var currentMode: CalculatorMode = .basic
     @State private var showMenu = false
+    @State private var showHistory = false
+    @State private var selectedDetent: PresentationDetent = .medium
 
     var body: some View {
         ZStack {
             Color.black.edgesIgnoringSafeArea(.all)
 
             VStack(spacing: 0) {
-                // Header with Menu Button
+                // Header with History and Menu Buttons
                 HStack {
+                    // History Button (Top-Leading)
+                    Button(action: {
+                        showHistory = true
+                    }) {
+                        Image(systemName: "clock.arrow.circlepath")  // User asked for this or clock
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                            .frame(width: 40, height: 40)
+                            .background(Color(UIColor.darkGray))
+                            .clipShape(Circle())
+                    }
+
+                    Spacer()
+
+                    // Mode Button (Top-Trailing)
                     Button(action: {
                         withAnimation {
                             showMenu.toggle()
                         }
                     }) {
-                        HStack {
-                            Image(systemName: "line.3.horizontal")
-                            Text(currentMode.rawValue)
-                                .font(.headline)
-                        }
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.gray.opacity(0.3))
-                        .cornerRadius(20)
+                        Image(systemName: "calculator")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
+                            .frame(width: 40, height: 40)
+                            .background(Color(UIColor.darkGray))
+                            .clipShape(Circle())
                     }
-                    Spacer()
                 }
                 .padding(.horizontal)
                 .padding(.top, 40)  // Adjust for safe area
                 .zIndex(1)
+                .sheet(isPresented: $showHistory) {
+                    HistoryView(viewModel: calculatorViewModel, isPresented: $showHistory)
+                        .presentationDetents([.medium, .large], selection: $selectedDetent)
+                        .presentationDragIndicator(.visible)
+                        .presentationBackground {
+                            if selectedDetent == .large {
+                                Color(red: 28 / 255, green: 28 / 255, blue: 30 / 255)
+                            } else {
+                                Rectangle()
+                                    .fill(.ultraThinMaterial.opacity(0.6))
+                            }
+                        }
+                }
 
                 // Main Content
                 Group {
