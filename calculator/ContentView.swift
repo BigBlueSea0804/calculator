@@ -20,21 +20,22 @@ enum CalcButton: String {
     case decimal = "."
     case percent = "%"
     case negative = "+/-"
+    case delete = "delete"
 
     var buttonColor: Color {
         switch self {
         case .add, .subtract, .multiply, .divide, .equal:
             return .orange
-        case .clear, .negative, .percent:
+        case .delete, .clear, .percent:
             return Color(.lightGray)
         default:
-            return Color(UIColor(red: 55/255.0, green: 55/255.0, blue: 55/255.0, alpha: 1))
+            return Color(UIColor(red: 55 / 255.0, green: 55 / 255.0, blue: 55 / 255.0, alpha: 1))
         }
     }
-    
+
     var textColor: Color {
         switch self {
-        case .clear, .negative, .percent:
+        case .delete, .clear, .percent:
             return .black
         default:
             return .white
@@ -43,24 +44,27 @@ enum CalcButton: String {
 }
 
 struct ContentView: View {
-    
+
     @State private var value = "0"
-    
+    @State private var previousNumber: Double = 0
+    @State private var currentOperation: CalcButton? = nil
+    @State private var isTyping = false
+
     let buttons: [[CalcButton]] = [
-        [.clear, .negative, .percent, .divide],
+        [.delete, .clear, .percent, .divide],
         [.seven, .eight, .nine, .multiply],
         [.four, .five, .six, .subtract],
         [.one, .two, .three, .add],
-        [.zero, .decimal, .equal]
+        [.negative, .zero, .decimal, .equal],
     ]
-    
+
     var body: some View {
         ZStack {
             Color.black.edgesIgnoringSafeArea(.all)
-            
+
             VStack {
                 Spacer()
-                
+
                 // Result Display
                 HStack {
                     Spacer()
@@ -68,26 +72,37 @@ struct ContentView: View {
                         .bold()
                         .font(.system(size: 100))
                         .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                 }
                 .padding()
-                
+
                 // Buttons
                 ForEach(buttons, id: \.self) { row in
                     HStack(spacing: 12) {
                         ForEach(row, id: \.self) { item in
-                            Button(action: {
-                                self.didTap(button: item)
-                            }, label: {
-                                Text(item.rawValue)
-                                    .font(.system(size: 32))
+                            Button(
+                                action: {
+                                    self.didTap(button: item)
+                                },
+                                label: {
+                                    Group {
+                                        if item == .delete {
+                                            Image(systemName: "delete.left")
+                                                .font(.system(size: 32))
+                                        } else {
+                                            Text(item.rawValue)
+                                                .font(.system(size: 32))
+                                        }
+                                    }
                                     .frame(
                                         width: self.buttonWidth(item: item),
                                         height: self.buttonHeight()
                                     )
-                                    .background(item.buttonColor)
-                                    .foregroundColor(item.textColor)
-                                    .cornerRadius(self.buttonWidth(item: item)/2)
-                            })
+                                    .background(self.buttonBackgroundColor(item: item))
+                                    .foregroundColor(self.buttonTextColor(item: item))
+                                    .cornerRadius(self.buttonWidth(item: item) / 2)
+                                })
                         }
                     }
                     .padding(.bottom, 3)
@@ -95,39 +110,109 @@ struct ContentView: View {
             }
         }
     }
-    
+
+    func buttonBackgroundColor(item: CalcButton) -> Color {
+        if item == currentOperation {
+            return .white
+        }
+        return item.buttonColor
+    }
+
+    func buttonTextColor(item: CalcButton) -> Color {
+        if item == currentOperation {
+            return .orange
+        }
+        return item.textColor
+    }
+
     func didTap(button: CalcButton) {
         switch button {
-        case .add, .subtract, .multiply, .divide, .equal:
-            break // Operation logic not requested yet
+        case .add, .subtract, .multiply, .divide:
+            self.currentOperation = button
+            self.previousNumber = Double(self.value) ?? 0
+            self.isTyping = false
+        case .equal:
+            let currentValue = Double(self.value) ?? 0
+            let result = calculate(
+                operation: currentOperation, prev: previousNumber, current: currentValue)
+
+            // Format result to remove decimal if integer
+            if result.truncatingRemainder(dividingBy: 1) == 0 {
+                self.value = "\(Int(result))"
+            } else {
+                self.value = "\(result)"
+            }
+            self.currentOperation = nil
+            self.previousNumber = 0
         case .clear:
             self.value = "0"
-        case .negative, .percent:
-             break // Feature logic not requested yet
+            self.previousNumber = 0
+            self.currentOperation = nil
+            self.isTyping = false
+        case .delete:
+            if value.count > 1 {
+                value.removeLast()
+            } else {
+                value = "0"
+                isTyping = false
+            }
+        case .negative:
+            if let currentValue = Double(value) {
+                let newValue = currentValue * -1
+                if newValue.truncatingRemainder(dividingBy: 1) == 0 {
+                    self.value = "\(Int(newValue))"
+                } else {
+                    self.value = "\(newValue)"
+                }
+            }
+        case .percent:
+            if let currentValue = Double(value) {
+                let newValue = currentValue / 100
+                self.value = "\(newValue)"
+            }
+        case .decimal:
+            // Prevent multiple decimals
+            if !self.value.contains(".") {
+                self.value += "."
+                self.isTyping = true
+            }
         default:
             let number = button.rawValue
-            if self.value == "0" {
-                value = number
+            if isTyping {
+                if value == "0" && number != "." {
+                    self.value = number
+                } else {
+                    self.value = "\(self.value)\(number)"
+                }
             } else {
-                self.value = "\(self.value)\(number)"
+                self.value = number
+                self.isTyping = true
             }
         }
     }
-    
-    func buttonWidth(item: CalcButton) -> CGFloat {
-        if item == .zero {
-            return ((UIScreen.main.bounds.width - (4*12)) / 4) * 2 + 12
-        }
-        return (UIScreen.main.bounds.width - (5*12)) / 4
-    }
-    
-    func buttonHeight() -> CGFloat {
-        return (UIScreen.main.bounds.width - (5*12)) / 4
-    }
-}
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+    func calculate(operation: CalcButton?, prev: Double, current: Double) -> Double {
+        guard let operation = operation else { return current }
+
+        switch operation {
+        case .add:
+            return prev + current
+        case .subtract:
+            return prev - current
+        case .multiply:
+            return prev * current
+        case .divide:
+            return prev / current
+        default:
+            return current
+        }
+    }
+
+    func buttonWidth(item: CalcButton) -> CGFloat {
+        return (UIScreen.main.bounds.width - (5 * 12)) / 4
+    }
+
+    func buttonHeight() -> CGFloat {
+        return (UIScreen.main.bounds.width - (5 * 12)) / 4
     }
 }
